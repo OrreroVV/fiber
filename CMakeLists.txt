@@ -9,10 +9,10 @@ set(CMAKE_CXX_FLAGS "$ENV{CXXFLAGS} -rdynamic -O3 -ggdb -std=c++11 -w")
 
 include_directories(.)
 
-find_package(Boost REQUIRED)
-if(Boost_FOUND)
-    include_directories(${Boost_INCLUDE_DIRS})
-endif()
+# find_package(Boost REQUIRED)
+# if(Boost_FOUND)
+#     include_directories(${Boost_INCLUDE_DIRS})
+# endif()
 
 set(LIB_SRC
     hzh/utils.cpp
@@ -34,12 +34,14 @@ set(LIBS
         hzh
         dl
         pthread
-        yaml-cpp)
+        #yaml-cpp
+        )
 
 hzh_add_executable(test_thread "tests/test_thread.cpp" hzh "${LIBS}")
 
 hzh_add_executable(test_fiber "tests/test_fiber.cpp" hzh "${LIBS}")
 hzh_add_executable(test_scheduler "tests/test_scheduler.cpp" hzh "${LIBS}")
+hzh_add_executable(test_iomanager "tests/test_iomanager.cpp" hzh "${LIBS}")
 
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)

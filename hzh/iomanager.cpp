@@ -133,20 +133,53 @@ int IOManager::delEvent(int fd, Event event) {
         return -1;
     }
     FdContext* fd_ctx = m_fdContexts[fd];
-    lock.unlock();
 
     if (!(fd_ctx->events & event)) {
         LOG_ERROR("delEvent not event");
         return -1;
     }
+    lock.unlock();
+    RWMutexType::WriteLock lock2(m_mutex);
 
     fd_ctx->events = (Event)(fd_ctx->events ^ event);
     int op = fd_ctx->events ? EPOLL_CTL_MOD : EPOLL_CTL_DEL;
     epoll_event epevent;
-    
+    epevent.events = EPOLLET | fd_ctx->events ^ event;
+    epevent.data.ptr = fd_ctx;
+
+    int rt = epoll_ctl(m_epfd, op, fd, &epevent);
+    if (rt) {
+        LOG_ERROR("delEvent fd:%d, rt:%d", fd, rt);
+        return -1;
+    }
+
+    --m_pendingEventCount;
+    return 0;
 }
 
-void IOManager::contextResizeNoLock(size_t size) {
+void IOManager::tickle() {
+    if (hasIdleThreads()) {
+        return;
+    }    
+    int rt = write(m_tickleFds[1], "T", 1);
+    assert(rt == 1);
+}
+
+bool IOManager::stopping() {
+    uint64_t timer;
+    return stopping(timer);
+}
+
+void IOManager::idle() {
+    LOG_DEBUG("IO MANAGER IDLE");
+}
+
+void IOManager::onTimerInsertedAtFront() {
+
+}
+
+void IOManager::contextResizeNoLock(size_t size)
+{
     m_fdContexts.resize(size);
     for (int i = 0; i < m_fdContexts.size(); ++i) {
         if (!m_fdContexts[i]) {
@@ -154,6 +187,13 @@ void IOManager::contextResizeNoLock(size_t size) {
             m_fdContexts[i]->fd = i;
         }
     }
+}
+
+bool IOManager::stopping(uint64_t &timeout) {
+    timeout = getNextTimer();
+    return !m_pendingEventCount
+        && timeout == ~0ull
+        && Scheduler::stopping();
 }
 
 }
