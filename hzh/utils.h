@@ -1,5 +1,14 @@
-#include "log.h"
+#ifndef __UTILS_H__
+#define __UTILS_H__
 
+/***
+ * @Author: Orrero
+ * @Date: 2024-12-25
+ * @Description: 
+ * @
+ * @Copyright (c) 2024 by Orrero, All Rights Reserved.
+ */
+#include "log.h"
 #include <execinfo.h>
 #include <sys/time.h>
 #include <unistd.h>
@@ -12,9 +21,11 @@
 namespace hzh {
 
 
-pid_t GetThreadId() {
+inline pid_t GetThreadId() {
     return syscall(SYS_gettid);
 }
 
 
 }
+
+#endif // __UTILS_H__

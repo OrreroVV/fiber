@@ -35,7 +35,7 @@ struct ScopedLockImpl {
 public:
     ScopedLockImpl(T& mutex)
         : m_mutex(mutex) {
-        lock();
+        m_mutex.lock();
         m_locked = true;
     }   
 
@@ -160,7 +160,9 @@ public:
     typedef ScopedLockImpl<Mutex> Lock;
     
     Mutex() {
-        pthread_mutex_init(&m_mutex, nullptr);
+        if (pthread_mutex_init(&m_mutex, nullptr)) {
+            perror("Mutex initialization failed");
+        };
     }
     
     ~Mutex() {
@@ -182,11 +184,19 @@ private:
 class Thread : Noncopyable{
 public:
     typedef std::shared_ptr<Thread> ptr;
-    
+
     Thread(std::function<void()> cb, const std::string& name);
     ~Thread();
+
+    pid_t getId() const { return m_id;}
+    const std::string& getName() const { return m_name;}
+
     void join();
     static void* run(void* arg);
+
+    static Thread* GetThis();
+    static const std::string& GetName();
+    static void SetName(const std::string& name);
 
 private:
     pid_t m_id;

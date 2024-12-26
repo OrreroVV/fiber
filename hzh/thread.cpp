@@ -12,6 +12,9 @@
 
 namespace hzh{
 
+static thread_local Thread* t_thread = nullptr;
+static thread_local std::string t_thread_name = "UNKNOW";
+
 Semaphore::Semaphore(uint32_t count) {
     if (sem_init(&m_semaphore, 0, count)) {
         throw std::logic_error("sem_init error");
@@ -72,12 +75,27 @@ void* Thread::run(void* arg) {
 
     std::function<void()>cb;
     swap(cb, thread->m_cb);
-    LOG_INFO("t_id: %d", thread->m_id);
+    LOG_INFO("thread t_id: %d", thread->m_id);
 
     thread->m_semaphore.notify();
 
     cb();
     return 0;
+}
+
+Thread* Thread::GetThis() {
+    return t_thread;
+}
+
+const std::string& Thread::GetName() {
+    return t_thread_name;
+}
+
+void Thread::SetName(const std::string& name) {
+    if(t_thread) {
+        t_thread->m_name = name;
+    }
+    t_thread_name = name;
 }
     
 }

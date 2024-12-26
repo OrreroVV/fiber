@@ -16,6 +16,8 @@ endif()
 
 set(LIB_SRC
     hzh/thread.cpp
+    hzh/fiber.cpp
+    hzh/scheduler.cpp
     )
 
 
@@ -32,6 +34,9 @@ set(LIBS
         yaml-cpp)
 
 hzh_add_executable(test_thread "tests/test_thread.cpp" hzh "${LIBS}")
+
+hzh_add_executable(test_fiber "tests/test_fiber.cpp" hzh "${LIBS}")
+hzh_add_executable(test_scheduler "tests/test_scheduler.cpp" hzh "${LIBS}")
 
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
