@@ -25,6 +25,9 @@ inline pid_t GetThreadId() {
     return syscall(SYS_gettid);
 }
 
+uint64_t GetCurrentMS();
+
+uint64_t GetCurrentUS();
 
 }
 

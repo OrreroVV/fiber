@@ -15,9 +15,12 @@ if(Boost_FOUND)
 endif()
 
 set(LIB_SRC
+    hzh/utils.cpp
     hzh/thread.cpp
     hzh/fiber.cpp
     hzh/scheduler.cpp
+    hzh/timer.cpp
+    hzh/iomanager.cpp
     )
 
 
