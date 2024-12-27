@@ -29,6 +29,11 @@ uint64_t GetCurrentMS();
 
 uint64_t GetCurrentUS();
 
+template<class T>
+T& getInstance() {
+
+}
+
 }
 
 #endif // __UTILS_H__

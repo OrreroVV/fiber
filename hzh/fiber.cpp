@@ -83,7 +83,7 @@ void Fiber::reset(std::function<void()> cb) {
     assert(m_stack);
     assert(m_state == TERM
         || m_state == EXCEPT
-        || m_state || INIT);
+        || m_state == INIT);
     m_cb = cb;
     if (getcontext(&m_ctx)) {
         assert(false);

@@ -106,12 +106,12 @@ public:
     bool cancelEvent(int fd, Event event);
 
     /**
-     * @brief 取消所有事件
-     * 
+     * @brief 取消当前fd所有事件
+     * @param fd 
      * @return true 
      * @return false 
      */
-    bool cancelAll();
+    bool cancelAll(int fd);
 
     /**
      * @brief Get the This object
@@ -128,6 +128,12 @@ protected:
 
     void contextResizeNoLock(size_t size);
 
+    /**
+     * @brief 判断是否任务做完，并且赋值下一个最近的时间给timeout
+     * @param timeout 
+     * @return true 
+     * @return false 
+     */
     bool stopping(uint64_t& timeout);
 
 private:
