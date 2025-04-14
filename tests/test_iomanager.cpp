@@ -35,9 +35,29 @@ void test_() {
     if(!connect(sock, (const sockaddr*)&addr, sizeof(addr))) {
         LOG_DEBUG("connect success");
     } else if(errno == EINPROGRESS) {
-        hzh::IOManager::GetThis()->addEvent(sock, hzh::IOManager::WRITE, [&](){
-            LOG_DEBUG("success fd: %d", sock);
-        });
+        hzh::Fiber::ptr fiber(new hzh::Fiber([sock](){
+            hzh::IOManager::GetThis()->addEvent(sock, hzh::IOManager::WRITE, [=](){
+                int err;
+                socklen_t len = sizeof(err);
+                if (getsockopt(sock, SOL_SOCKET, SO_ERROR, &err, &len) < 0) {
+                    LOG_ERROR("getsockopt failed");
+                    close(sock);
+                    return;
+                }
+                if (err != 0) {
+                    return;
+                }
+                write(sock, "hello", 5);
+                char buffer[1024] = { };
+                int ret = read(sock, buffer, 1024);
+                hzh::IOManager::GetThis()->addEvent(sock, hzh::IOManager::READ, [=](){
+                    LOG_DEBUG("read ret: %d, %s", ret, buffer);
+                });
+                hzh::Fiber::GetThis()->swapOut();
+            });
+            hzh::Fiber::GetThis()->swapOut();
+        }));
+        hzh::IOManager::GetThis()->schedule(fiber);
     }
 }
 

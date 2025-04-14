@@ -14,6 +14,7 @@
 #include <list>
 #include "thread.h"
 #include "fiber.h"
+#include "utils.h"
 
 namespace hzh {
 
@@ -92,7 +93,7 @@ private:
         }
         FiberAndThread(std::function<void()>* f, int thr)
             :thread(thr) {
-            swap(cb, *f);
+            cb.swap(*f);
         }
         
         FiberAndThread() 

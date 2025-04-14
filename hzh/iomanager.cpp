@@ -41,11 +41,11 @@ void IOManager::FdContext::triggerEvent(Event event) {
 
     events = (Event)(events & ~event);
 
-    EventContext ctx = getContext(event);
+    EventContext& ctx = getContext(event);
     if (ctx.cb) {
-        ctx.scheduler->schedule(ctx.cb);
+        ctx.scheduler->schedule(&ctx.cb);
     } else if (ctx.fiber) {
-        ctx.scheduler->schedule(ctx.fiber);
+        ctx.scheduler->schedule(&ctx.fiber);
     }
 
     ctx.scheduler = nullptr;
@@ -97,7 +97,7 @@ int IOManager::addEvent(int fd, Event event, std::function<void()> cb) {
         fd_ctx = m_fdContexts[fd];
     } else {
         fd_ctx = m_fdContexts[fd];
-        lock.lock();
+        lock.unlock();
     }
 
     FdContext::MutexType::Lock lock2(fd_ctx->mutex);
@@ -108,7 +108,7 @@ int IOManager::addEvent(int fd, Event event, std::function<void()> cb) {
     }
 
     Event new_event = (Event)(fd_ctx->events | event);
-    int op = new_event ? EPOLL_CTL_ADD : EPOLL_CTL_MOD;
+    int op = fd_ctx->events ? EPOLL_CTL_MOD : EPOLL_CTL_ADD;
     epoll_event epevent;
     epevent.events = EPOLLET | new_event;
     epevent.data.ptr = fd_ctx;
