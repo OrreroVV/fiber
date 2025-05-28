@@ -32,7 +32,7 @@ Fiber::Fiber() {
     }
     
     ++s_fiber_count;
-    LOG_DEBUG("main fiber, thread: %d", GetThreadId());
+    LOG_DEBUG("main fiber, thread: %d, fiber id: %d", GetThreadId(), m_id);
 }
 
 
@@ -100,6 +100,7 @@ void Fiber::swapIn() {
     SetThis(this);
     assert(m_state != EXEC);
     m_state = EXEC;
+    LOG_DEBUG("fiber id %lld swapIn %lld, %lld", GetMainFiberId(), Scheduler::GetMainFiber()->getId(), hzh::GetThreadId());
     if (swapcontext(&Scheduler::GetMainFiber()->m_ctx, &m_ctx)) {
         LOG_ERROR("swap context error");
         assert(false);
@@ -107,6 +108,7 @@ void Fiber::swapIn() {
 }
 
 void Fiber::swapOut() {
+    LOG_DEBUG("fiber id %lld swapOut %lld, %lld", GetThis()->getId(), Scheduler::GetMainFiber()->getId(), hzh::GetThreadId());
     SetThis(Scheduler::GetMainFiber());
     if (swapcontext(&m_ctx, &Scheduler::GetMainFiber()->m_ctx)) {
         LOG_ERROR("swap context error");
@@ -159,7 +161,7 @@ uint64_t Fiber::TotalFibers() {
 
 void Fiber::MainFunc() {
     Fiber::ptr cur = GetThis();
-    LOG_INFO("mainfunc %p", static_cast<void*>(&*cur));
+    LOG_INFO("mainfunc %p, fiber id: %lld", static_cast<void*>(&*cur), GetMainFiberId());
     assert(cur);
     try {
         cur->m_cb();

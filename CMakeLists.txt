@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.10)
 project(hzh)
 
 include (cmake/utils.cmake)
@@ -9,6 +9,8 @@ set(CMAKE_CXX_FLAGS " -g -O0 -ggdb -std=c++17 -w")
 
 include_directories(.)
 include_directories(/opt/glibc-2.31/include)
+include_directories(3rd/openssl/include)
+# add_definitions("-D__DEBUG__")
 
 # find_package(Boost REQUIRED)
 # if(Boost_FOUND)
@@ -33,11 +35,15 @@ find_library(PTHREAD pthread)
 
 set(LIBS
         hzh
+        /home/hzh/workspace/fiber/3rd/openssl/lib64/libssl.a
+        /home/hzh/workspace/fiber/3rd/openssl/lib64/libcrypto.a
         dl
-        # pthread
-        # rt
-        /opt/glibc-2.31/lib/libpthread.so
-        /opt/glibc-2.31/lib/librt.so
+        pthread
+        rt
+        z
+        m
+        # /opt/glibc-2.31/lib/libpthread.so
+        # /opt/glibc-2.31/lib/librt.so
         #yaml-cpp
         )
 
@@ -48,6 +54,11 @@ hzh_add_executable(test_scheduler "tests/test_scheduler.cpp" hzh "${LIBS}")
 hzh_add_executable(test_iomanager "tests/test_iomanager.cpp" hzh "${LIBS}")
 
 hzh_add_executable(main "tests/main.cpp" hzh "${LIBS}")
+
+hzh_add_executable(test_server "tests/test_server.cpp" hzh "${LIBS}")
+hzh_add_executable(test_client "tests/test_client.cpp" hzh "${LIBS}")
+
+hzh_add_executable(test_ssl "tests/test_ssl.cpp" hzh "${LIBS}")
 
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)

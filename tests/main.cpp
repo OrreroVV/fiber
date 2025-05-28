@@ -109,6 +109,7 @@ public:
         std::set<T> result;
         std::istringstream iss(input);
         T value;
+        std::cout << "set<T>" << std::endl;
         
         std::string token;
         while (std::getline(iss, token, ',')) {
@@ -121,6 +122,15 @@ public:
     }
 };
 
+template<typename T>
+class LexicalCast<std::string, T> {
+public:
+    T operator()(const std::string& input) {
+        T result;
+        std::cout << "T" << std::endl;
+        return result;
+    }
+};
 
 template<typename T, typename From=LexicalCast<std::string, std::set<T>>, typename To=LexicalCast<std::set<T>, std::string>>
 class Config {
@@ -135,6 +145,14 @@ public:
     }
 };
 
+
+void test_lexical() {
+    Config<std::string> a;
+
+    a.fromString("abc");
+
+
+}
 
 template<typename, typename...>
 class Function;
@@ -203,56 +221,31 @@ struct Multiplier {
 
 /*
 
-给你一个下标从 0 开始、长度为 n 的二进制字符串 s ，你可以对其执行两种操作：
+给你一个整数数组 nums 和一个 正整数 k 。
 
-选中一个下标 i 并且反转从下标 0 到下标 i（包括下标 0 和下标 i ）的所有字符，成本为 i + 1 。
-选中一个下标 i 并且反转从下标 i 到下标 n - 1（包括下标 i 和下标 n - 1 ）的所有字符，成本为 n - i 。
-返回使字符串内所有字符 相等 需要的 最小成本 。
+请你统计有多少满足 「 nums 中的 最大 元素」至少出现 k 次的子数组，并返回满足这一条件的子数组的数目。
 
-反转 字符意味着：如果原来的值是 '0' ，则反转后值变为 '1' ，反之亦然。
+子数组是数组中的一个连续元素序列。
 
  
-1001
-
-
-
 
 示例 1：
-1 + 2
-2 + 1
-输入：s = "1011"
-输出：2
-解释：执行第二种操作，选中下标 i = 2 ，可以得到 s = "0000" ，成本为 2 。可以证明 2 是使所有字符相等的最小成本。
+
+输入：nums = [1,3,2,3,3], k = 2
+输出：6
+解释：包含元素 3 至少 2 次的子数组为：[1,3,2,3]、[1,3,2,3,3]、[3,2,3]、[3,2,3,3]、[2,3,3] 和 [3,3] 。
 示例 2：
 
-
-111010111
-111011111
-6 + 5 + 4 + 3
-
-4 + 4 + 3 + 3
-
-2 + 1 + 3 + 2 + 1
-101010
-
-输入：s = "010101"
-输出：9
-解释：执行第一种操作，选中下标 i = 2 ，可以得到 s = "101  101" ，成本为 3 。
-执行第一种操作，选中下标 i = 1 ，可以得到 s = "011101" ，成本为 2 。
-执行第一种操作，选中下标 i = 0 ，可以得到 s = "111101" ，成本为 1 。
-执行第二种操作，选中下标 i = 4 ，可以得到 s = "111110" ，成本为 2 。
-执行第二种操作，选中下标 i = 5 ，可以得到 s = "111111" ，成本为 1 。
-使所有字符相等的总成本等于 9 。可以证明 9 是使所有字符相等的最小成本。 
+输入：nums = [1,4,2,1], k = 3
+输出：0
+解释：没有子数组包含元素 4 至少 3 次。
  
 
 提示：
 
-1 <= s.length == n <= 105
-s[i] 为 '0' 或 '1'
-
-
-10001001
-4 + 
+1 <= nums.length <= 105
+1 <= nums[i] <= 106
+1 <= k <= 105
 */
 
 class Solution {
@@ -643,7 +636,191 @@ void testThead() {
     
 }
 
+
+
+
+//test condition_variable
+
+class CP {
+
+public:
+
+    void start() {
+        m_threads.emplace_back(std::thread(std::bind(&CP::product, this)));
+        m_threads.emplace_back(std::thread(std::bind(&CP::product, this)));
+        m_threads.emplace_back(std::thread(std::bind(&CP::product, this)));
+        m_threads.emplace_back(std::thread(std::bind(&CP::consumer, this)));
+        m_threads.emplace_back(std::thread(std::bind(&CP::consumer, this)));
+        m_threads.emplace_back(std::thread(std::bind(&CP::consumer, this)));
+        m_threads.emplace_back(std::thread(std::bind(&CP::consumer, this)));
+    }
+
+    void consumer() {
+        
+        while (!m_stop) {
+            {
+                std::unique_lock<std::mutex>lock(m_qMutex);
+                m_condition.wait(lock, [this]()->bool{ return q.size() || m_stop.load();});
+            }
+
+            if (m_stop.load()) {
+                break;
+            }
+            std::unique_lock<std::mutex>lock(m_qMutex);
+            auto t = q.front();
+            q.pop();
+            std::cout << "consumer: " << t << std::endl;
+        }
+    }
+
+    void product() {
+        while (!m_stop) {
+
+            if (m_stop.load()) {
+                break;
+            }
+
+            if (cnt > 1000) {
+                break;
+            }
+
+            {
+                std::unique_lock<std::mutex>lock(m_qMutex);
+                std::cout << "product: " << ++cnt << std::endl;
+                q.push(cnt);
+                m_condition.notify_one();
+            }
+            usleep(100000);
+        }
+    }
+
+
+
+
+private:
+    int cnt = { 0 };
+    std::atomic<bool>m_stop = { false };
+    std::vector<std::thread> m_threads;
+    std::mutex m_cMutex;
+    std::mutex m_pMutex;
+    std::mutex m_qMutex; //queue
+    std::queue<int>q;
+    std::condition_variable m_condition;
+};
+
+void test_cp() {
+    CP cp;
+    cp.start();
+    while (true) {
+        sleep(100);
+    }
+}
+
+//test5
+
+template<typename T> 
+void func_demo(T&& param) {
+
+}
+
+void test5() {
+
+
+    func_demo(10);
+    int a = 5;
+    func_demo(a);
+    func_demo(&a);
+    int* b = &a;
+    func_demo(std::move(a));
+
+
+
+    int* ptr = new int[10];
+    std::shared_ptr<int> p1(ptr, [](int* p)->void{delete []p;});
+    std::shared_ptr<int> p2(p1);
+    std::cout << p1.use_count() << " " << p2.use_count() << std::endl;
+
+
+    
+
+}
+
+//test5 end
+
+
+// test6 start
+
+
+void t_close(int fd) {
+    std::cout << "close: " << fd << std::endl;
+}
+
+
+void xxx(int a, int b) {
+    
+}
+
+void test6() {
+    void(*a)(int, int) = xxx;
+    a(1, 2);
+
+
+    // ThreadTool t;
+    // t.start();
+
+    // int a = 10;
+    // t.enqueue(t_close, a);
+
+
+    // t.stop();
+
+
+
+    // a(1, 2);
+
+}
+
+// test6 end
+
+
+
+void test_pipe() {
+    int fd[2] = {};
+
+    if (pipe(fd) == -1) {
+        perror("pipe");
+        return;
+    }
+
+    pid_t pid = fork();
+
+    if (pid == -1) {
+        perror("fork");
+        return;
+    }
+
+    if (!pid) {
+        close(fd[1]);
+        char buf[128] = {};
+        
+        read(fd[0], buf, sizeof(buf) - 1);
+        std::cout << buf << std::endl;
+        close(fd[0]);
+
+    } else {
+        std::string buf = "hello world";
+        close(fd[0]);
+
+        write(fd[1], buf.c_str(), sizeof(buf));
+        close(fd[1]);
+    }
+
+}
+
 int main() {
+    // test_cp();
     // test4();
+    // test_lexical();
+    test_pipe();
     return 0;
 }

@@ -75,7 +75,7 @@ void* Thread::run(void* arg) {
 
     std::function<void()>cb;
     swap(cb, thread->m_cb);
-    LOG_INFO("thread t_id: %d", thread->m_id);
+    LOG_INFO("thread t_id: %d， t_name: %s", thread->m_id, thread->m_name.c_str());
 
     thread->m_semaphore.notify();
 

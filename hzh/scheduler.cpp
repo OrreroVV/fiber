@@ -13,9 +13,9 @@
 
 namespace hzh {
 
-// 调度协程
-static thread_local Scheduler* t_scheduler = nullptr;
 // 调度器
+static thread_local Scheduler* t_scheduler = nullptr;
+// 调度协程
 static thread_local Fiber* t_scheduler_fiber = nullptr;
 
 /**
@@ -150,10 +150,10 @@ void Scheduler::tickle() {
 }
 
 void Scheduler::run() {
-    // 设置当前运行的scheduler
+    // 设置当前运行的scheduler，每个线程的t_scheduler都指向自己
     setThis();
     /**
-     * 如果不是主线程调度的话，则t_scheduler_fiber并不是有效的，需要把该线程所要执行的协程赋值给t_scheduler_fiber
+     * 如果不是主线程调度的话，则t_scheduler_fiber并不是有效的（指向的还是主线程的t_scheduler_fiber），需要把该线程的调度协程赋值给t_scheduler_fiber
      * case: GetThis() --> 如果Fiber::t_scheduler_fiber为空的话，则会创建一个新的协程
      * 
      * case: 主协程是m_rootFiber，这个协程是user_caller = true时所在的线程，也就是主线程
@@ -162,7 +162,7 @@ void Scheduler::run() {
     if (hzh::GetThreadId() != m_rootThread) {
         t_scheduler_fiber = Fiber::GetThis().get();
     }
-    LOG_INFO("scheduler run %p", static_cast<void*>(t_scheduler_fiber));
+    LOG_INFO("scheduler run fiber id %d, %d", t_scheduler_fiber->m_id, GetThreadId());
 
     Fiber::ptr idle_fiber(new Fiber(std::bind(&Scheduler::idle, this)));
 

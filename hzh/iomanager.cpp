@@ -37,11 +37,15 @@ void IOManager::FdContext::resetContext(EventContext &ctx) {
 }
 
 void IOManager::FdContext::triggerEvent(Event event) {
-    assert(events & event);
+    if (!(events & event)) {
+        LOG_ERROR("triggerEvent: event %d not in current events %d", event, events);
+        return;
+    }
 
     events = (Event)(events & ~event);
 
     EventContext& ctx = getContext(event);
+    assert(ctx.scheduler);
     if (ctx.cb) {
         ctx.scheduler->schedule(&ctx.cb);
     } else if (ctx.fiber) {
@@ -49,7 +53,6 @@ void IOManager::FdContext::triggerEvent(Event event) {
     }
 
     ctx.scheduler = nullptr;
-    return;
 }
 
 IOManager::IOManager(size_t threads, bool use_caller, const std::string &name)
@@ -89,15 +92,22 @@ IOManager::~IOManager() {
 
 int IOManager::addEvent(int fd, Event event, std::function<void()> cb) {
     FdContext* fd_ctx = nullptr;
-    RWMutexType::ReadLock lock(m_mutex);
-    if ((int)m_fdContexts.size() <= fd) {
-        lock.unlock();
-        RWMutexType::WriteLock lock2(m_mutex);
+    bool need_resize = false;
+    
+    // 只负责判断是否 resize，不读 fd_ctx
+    {
+        RWMutexType::ReadLock read_lock(m_mutex);
+        if ((int)m_fdContexts.size() <= fd) {
+            need_resize = true;
+        } else {
+            fd_ctx = m_fdContexts[fd];
+        }
+    }
+    
+    if (need_resize) {
+        RWMutexType::WriteLock write_lock(m_mutex);
         contextResizeNoLock(fd * 1.5);
         fd_ctx = m_fdContexts[fd];
-    } else {
-        fd_ctx = m_fdContexts[fd];
-        lock.unlock();
     }
 
     FdContext::MutexType::Lock lock2(fd_ctx->mutex);
